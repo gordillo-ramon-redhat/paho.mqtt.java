@@ -16,7 +16,12 @@
 package org.eclipse.paho.client.mqttv3.internal;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
+import javax.net.ssl.SNIHostName;
+import javax.net.ssl.SNIServerName;
+import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
@@ -45,6 +50,7 @@ public class SSLNetworkModule extends TCPNetworkModule {
 		super(factory, host, port, resourceContext);
 		this.host = host;
 		this.port = port;
+
 		log.setResourceName(resourceContext);
 	}
 
@@ -90,7 +96,19 @@ public class SSLNetworkModule extends TCPNetworkModule {
 			// RTC 765: Set a timeout to avoid the SSL handshake being blocked indefinitely
 			socket.setSoTimeout(this.handshakeTimeoutSecs*1000);
 		}
+		
+		// BEGIN: Openshift needs SNI
+		SNIHostName serverName = new SNIHostName(host);
+		List<SNIServerName> serverNames = new ArrayList<>(1);
+		serverNames.add(serverName);
+
+		SSLParameters params = ((SSLSocket)socket).getSSLParameters();
+		params.setServerNames(serverNames);
+		((SSLSocket)socket).setSSLParameters(params);
+		// END: Openshift needs SNI
+		
 		((SSLSocket)socket).startHandshake();
+
 		// reset timeout to default value
 		socket.setSoTimeout(soTimeout);   
 	}
