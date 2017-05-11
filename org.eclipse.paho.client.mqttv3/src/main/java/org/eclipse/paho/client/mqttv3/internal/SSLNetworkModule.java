@@ -45,6 +45,10 @@ public class SSLNetworkModule extends TCPNetworkModule {
 	 * Constructs a new SSLNetworkModule using the specified host and
 	 * port.  The supplied SSLSocketFactory is used to supply the network
 	 * socket.
+	 * @param factory the {@link SSLSocketFactory} to be used in this SSLNetworkModule
+	 * @param host the Hostname of the Server
+	 * @param port the Port of the Server
+	 * @param resourceContext Resource Context
 	 */
 	public SSLNetworkModule(SSLSocketFactory factory, String host, int port, String resourceContext) {
 		super(factory, host, port, resourceContext);
@@ -56,6 +60,7 @@ public class SSLNetworkModule extends TCPNetworkModule {
 
 	/**
 	 * Returns the enabled cipher suites.
+	 * @return a string array of enabled Cipher suites
 	 */
 	public String[] getEnabledCiphers() {
 		return enabledCiphers;
@@ -63,6 +68,7 @@ public class SSLNetworkModule extends TCPNetworkModule {
 
 	/**
 	 * Sets the enabled cipher suites on the underlying network socket.
+	 * @param enabledCiphers a String array of cipher suites to enable
 	 */
 	public void setEnabledCiphers(String[] enabledCiphers) {
 		final String methodName = "setEnabledCiphers";
@@ -92,10 +98,6 @@ public class SSLNetworkModule extends TCPNetworkModule {
 		super.start();
 		setEnabledCiphers(enabledCiphers);
 		int soTimeout = socket.getSoTimeout();
-		if ( soTimeout == 0 ) {
-			// RTC 765: Set a timeout to avoid the SSL handshake being blocked indefinitely
-			socket.setSoTimeout(this.handshakeTimeoutSecs*1000);
-		}
 		
 		// BEGIN: Openshift needs SNI
 		SNIHostName serverName = new SNIHostName(host);
@@ -107,6 +109,8 @@ public class SSLNetworkModule extends TCPNetworkModule {
 		((SSLSocket)socket).setSSLParameters(params);
 		// END: Openshift needs SNI
 		
+		// RTC 765: Set a timeout to avoid the SSL handshake being blocked indefinitely
+		socket.setSoTimeout(this.handshakeTimeoutSecs*1000);
 		((SSLSocket)socket).startHandshake();
 
 		// reset timeout to default value
